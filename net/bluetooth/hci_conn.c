@@ -1,6 +1,6 @@
 /*
    BlueZ - Bluetooth protocol stack for Linux
-   Copyright (c) 2000-2001, 2010-2012 Code Aurora Forum.  All rights reserved.
+   Copyright (c) 2000-2001, 2010-2012 The Linux Foundation.  All rights reserved.
 
    Written 2000,2001 by Maxim Krasnyansky <maxk@qualcomm.com>
 
@@ -670,7 +670,6 @@ struct hci_chan *hci_chan_add(struct hci_dev *hdev)
 
 	return chan;
 }
-EXPORT_SYMBOL(hci_chan_add);
 
 int hci_chan_del(struct hci_chan *chan)
 {
@@ -1133,12 +1132,18 @@ void hci_conn_enter_sniff_mode(struct hci_conn *conn)
 	}
 }
 
-struct hci_chan *hci_chan_create(struct hci_chan *chan,
+struct hci_chan *hci_chan_accept(struct hci_conn *conn,
 			struct hci_ext_fs *tx_fs, struct hci_ext_fs *rx_fs)
 {
+	struct hci_chan *chan;
 	struct hci_cp_create_logical_link cp;
 
+	chan = hci_chan_add(conn->hdev);
+	if (!chan)
+		return NULL;
+
 	chan->state = BT_CONNECT;
+	chan->conn = conn;
 	chan->tx_fs = *tx_fs;
 	chan->rx_fs = *rx_fs;
 	cp.phy_handle = chan->conn->handle;
@@ -1155,12 +1160,40 @@ struct hci_chan *hci_chan_create(struct hci_chan *chan,
 	cp.rx_fs.acc_latency = cpu_to_le32(chan->rx_fs.acc_latency);
 	cp.rx_fs.flush_to = cpu_to_le32(chan->rx_fs.flush_to);
 	hci_conn_hold(chan->conn);
-	if (chan->conn->out)
-		hci_send_cmd(chan->conn->hdev, HCI_OP_CREATE_LOGICAL_LINK,
-							sizeof(cp), &cp);
-	else
-		hci_send_cmd(chan->conn->hdev, HCI_OP_ACCEPT_LOGICAL_LINK,
-							sizeof(cp), &cp);
+	hci_send_cmd(conn->hdev, HCI_OP_ACCEPT_LOGICAL_LINK, sizeof(cp), &cp);
+	return chan;
+}
+EXPORT_SYMBOL(hci_chan_accept);
+
+struct hci_chan *hci_chan_create(struct hci_conn *conn,
+			struct hci_ext_fs *tx_fs, struct hci_ext_fs *rx_fs)
+{
+	struct hci_chan *chan;
+	struct hci_cp_create_logical_link cp;
+
+	chan = hci_chan_add(conn->hdev);
+	if (!chan)
+		return NULL;
+
+	chan->state = BT_CONNECT;
+	chan->conn = conn;
+	chan->tx_fs = *tx_fs;
+	chan->rx_fs = *rx_fs;
+	cp.phy_handle = chan->conn->handle;
+	cp.tx_fs.id = chan->tx_fs.id;
+	cp.tx_fs.type = chan->tx_fs.type;
+	cp.tx_fs.max_sdu = cpu_to_le16(chan->tx_fs.max_sdu);
+	cp.tx_fs.sdu_arr_time = cpu_to_le32(chan->tx_fs.sdu_arr_time);
+	cp.tx_fs.acc_latency = cpu_to_le32(chan->tx_fs.acc_latency);
+	cp.tx_fs.flush_to = cpu_to_le32(chan->tx_fs.flush_to);
+	cp.rx_fs.id = chan->rx_fs.id;
+	cp.rx_fs.type = chan->rx_fs.type;
+	cp.rx_fs.max_sdu = cpu_to_le16(chan->rx_fs.max_sdu);
+	cp.rx_fs.sdu_arr_time = cpu_to_le32(chan->rx_fs.sdu_arr_time);
+	cp.rx_fs.acc_latency = cpu_to_le32(chan->rx_fs.acc_latency);
+	cp.rx_fs.flush_to = cpu_to_le32(chan->rx_fs.flush_to);
+	hci_conn_hold(chan->conn);
+	hci_send_cmd(conn->hdev, HCI_OP_CREATE_LOGICAL_LINK, sizeof(cp), &cp);
 	return chan;
 }
 EXPORT_SYMBOL(hci_chan_create);

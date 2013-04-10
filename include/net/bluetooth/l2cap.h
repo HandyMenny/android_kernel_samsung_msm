@@ -1,6 +1,6 @@
 /*
    BlueZ - Bluetooth protocol stack for Linux
-   Copyright (c) 2000-2001, 2010-2012 Code Aurora Forum.  All rights reserved.
+   Copyright (c) 2000-2001, 2010-2012 The Linux Foundation.  All rights reserved.
    Copyright (C) 2009-2010 Gustavo F. Padovan <gustavo@padovan.org>
    Copyright (C) 2010 Google Inc.
 
@@ -51,7 +51,7 @@
 
 #define L2CAP_CONN_TIMEOUT	(40000) /* 40 seconds */
 #define L2CAP_INFO_TIMEOUT	(4000)  /*  4 seconds */
-#define L2CAP_MOVE_TIMEOUT		(4*HZ)  /*  4 seconds */
+#define L2CAP_MOVE_TIMEOUT		(2*HZ)  /*  2 seconds */
 #define L2CAP_MOVE_ERTX_TIMEOUT		(60*HZ) /* 60 seconds */
 
 /* L2CAP socket address */

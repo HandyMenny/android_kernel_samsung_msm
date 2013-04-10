@@ -1,7 +1,7 @@
 /*
    BlueZ - Bluetooth protocol stack for Linux
    Copyright (C) 2010  Nokia Corporation
-   Copyright (c) 2011-2012 Code Aurora Forum.  All rights reserved.
+   Copyright (c) 2011-2012 The Linux Foundation.  All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
@@ -2695,9 +2695,6 @@ int mgmt_control(struct sock *sk, struct msghdr *msg, size_t msglen)
 		break;
 	case MGMT_OP_LE_CANCEL_CREATE_CONN_WHITE_LIST:
 		err = le_cancel_create_conn_white_list(sk, index);
-		break;
-	case MGMT_OP_LE_CANCEL_CREATE_CONN:
-		err = le_cancel_create_conn(sk, index, buf + sizeof(*hdr), len);
 		break;
 	default:
 		BT_DBG("Unknown op %u", opcode);
