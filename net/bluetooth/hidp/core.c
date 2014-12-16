@@ -1,7 +1,7 @@
 /*
    HIDP implementation for Linux Bluetooth stack (BlueZ).
    Copyright (C) 2003-2004 Marcel Holtmann <marcel@holtmann.org>
-   Copyright (c) 2012 The Linux Foundation.  All rights reserved.
+   Copyright (c) 2012-2013 The Linux Foundation.  All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2 as
@@ -22,6 +22,7 @@
 */
 
 #include <linux/module.h>
+#include <linux/interrupt.h>
 
 #include <linux/types.h>
 #include <linux/errno.h>
@@ -92,26 +93,6 @@ static struct hidp_session *__hidp_get_session(bdaddr_t *bdaddr)
 	return NULL;
 }
 
-static struct device *hidp_get_device(struct hidp_session *session)
-{
-	bdaddr_t *dst = &session->bdaddr;
-
-	struct device *device = NULL;
-	struct hci_dev *hdev;
-
-	hdev = hci_get_route(dst, BDADDR_ANY);
-	if (!hdev)
-		return NULL;
-
-	session->conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, dst);
-	if (session->conn)
-		device = &session->conn->dev;
-
-	hci_dev_put(hdev);
-
-	return device;
-}
-
 static void __hidp_link_session(struct hidp_session *session)
 {
 	__module_get(THIS_MODULE);
@@ -120,9 +101,19 @@ static void __hidp_link_session(struct hidp_session *session)
 
 static void __hidp_unlink_session(struct hidp_session *session)
 {
-	struct device *dev;
+	bdaddr_t *dst = &session->bdaddr;
+	struct hci_dev *hdev;
+	struct device *dev = NULL;
 
-	dev = hidp_get_device(session);
+	hdev = hci_get_route(dst, BDADDR_ANY);
+	if (hdev) {
+		session->conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, dst);
+		if (session->conn && session->conn->hidp_session_valid)
+			dev = &session->conn->dev;
+
+		hci_dev_put(hdev);
+	}
+
 	if (dev)
 		hci_conn_put_device(session->conn);
 
@@ -655,6 +646,30 @@ static int hidp_session(void *arg)
 
 	kfree(session);
 	return 0;
+}
+
+static struct hci_conn *hidp_get_connection(struct hidp_session *session)
+{
+	bdaddr_t *src = &bt_sk(session->ctrl_sock->sk)->src;
+	bdaddr_t *dst = &bt_sk(session->ctrl_sock->sk)->dst;
+	struct hci_conn *conn;
+	struct hci_dev *hdev;
+
+	hdev = hci_get_route(dst, src);
+	if (!hdev)
+		return NULL;
+
+	hci_dev_lock_bh(hdev);
+	conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, dst);
+	if (conn) {
+		conn->hidp_session_valid = true;
+		hci_conn_hold_device(conn);
+	}
+	hci_dev_unlock_bh(hdev);
+
+	hci_dev_put(hdev);
+
+	return conn;
 }
 
 static int hidp_setup_input(struct hidp_session *session,

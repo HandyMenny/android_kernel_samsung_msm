@@ -390,8 +390,9 @@ static irqreturn_t gpiokey_irq_handler(int irq_in, void *dev_id)
 			input_report_key(kp->input_devs->dev[dev], KEY_END, 1);
 #ifdef CONFIG_KERNEL_DEBUG_SEC
 //			printk("key event (keycode:%d, pressed:%d)\n", KEY_END, 1);	//sec: sm.kim
-#endif			
+#endif
 			key_pressed = 1;
+			report_sync(kp);
 		}
 		else if (key_status == 1) // 1 : release
 		{
@@ -403,6 +404,7 @@ static irqreturn_t gpiokey_irq_handler(int irq_in, void *dev_id)
 #if defined(CONFIG_TOUCHSCREEN_SAMSUNG_SYNAPTICS_I2C_RMI4) && (defined(CONFIG_MACH_COOPER) || defined(CONFIG_MACH_BENI) || defined(CONFIG_MACH_TASS) || defined(CONFIG_MACH_TASSDT) || defined(CONFIG_MACH_GIO))
 			TSP_forced_release_forkey();
 #endif
+			report_sync(kp);
 		}
 	}
 	else
@@ -546,9 +548,9 @@ static int gpio_keypad_request_irqs(struct gpio_kp *kp)
 		pr_err("gpiomatrix: set_irq_wake failed for input %d, "	"irq %d\n", mi->input_gpios[i], irq);
 	}
 #elif defined (CONFIG_MACH_CALLISTO)
-	err = enable_irq_wake(gpio_to_irq(GPIO_KBR5), 1);	// hsil
-	err = enable_irq_wake(gpio_to_irq(GPIO_KBR6), 1);	// hsil
-	err = enable_irq_wake(gpio_to_irq(GPIO_VOL_UP), 1);	// hsil
+	err = enable_irq_wake(gpio_to_irq(GPIO_KBR5));	// hsil
+	err = enable_irq_wake(gpio_to_irq(GPIO_KBR6));	// hsil
+	err = enable_irq_wake(gpio_to_irq(GPIO_VOL_UP));	// hsil
 #endif
 	
 //#ifndef CONFIG_MACH_LUCAS

@@ -55,6 +55,11 @@ extern uint32 mdp_intr_mask;
 int first_pixel_start_x;
 int first_pixel_start_y;
 
+#ifdef CONFIG_SAMSUNG_BOARD_REVISION
+// hsil
+int mdp_lcdc_on_flg = 0;
+#endif
+
 int mdp_lcdc_on(struct platform_device *pdev)
 {
 	int lcdc_width;
@@ -99,6 +104,19 @@ int mdp_lcdc_on(struct platform_device *pdev)
 	int ret;
 	uint32_t mask, curr;
 
+#ifdef CONFIG_SAMSUNG_BOARD_REVISION
+	// hsil
+	if (mdp_lcdc_on_flg)
+	{
+		printk("[kkw] %s(%d)  mdp_lcdc_on start called twice\n", __func__, __LINE__);
+		return 0;
+	}
+
+	mdp_lcdc_on_flg = 1;
+
+	printk("[HSIL] %s(%d)  mdp_lcdc_on start\n", __func__, __LINE__);
+#endif
+
 	mfd = (struct msm_fb_data_type *)platform_get_drvdata(pdev);
 
 	if (!mfd)
@@ -118,7 +136,11 @@ int mdp_lcdc_on(struct platform_device *pdev)
 
 	buf += calc_fb_offset(mfd, fbi, bpp);
 
+#if defined(CONFIG_MACH_TASS) || defined(CONFIG_MACH_TASSDT) || defined(CONFIG_MACH_BENI) || defined(CONFIG_MACH_LUCAS) || defined(CONFIG_MACH_COOPER) || defined(CONFIG_MACH_GIO) || defined(CONFIG_MACH_CALLISTO)
+	dma2_cfg_reg = DMA_PACK_ALIGN_LSB | DMA_DITHER_EN | DMA_OUT_SEL_LCDC;
+#else
 	dma2_cfg_reg = DMA_PACK_ALIGN_LSB | DMA_OUT_SEL_LCDC;
+#endif
 
 	if (mfd->fb_imgType == MDP_BGR_565)
 		dma2_cfg_reg |= DMA_PACK_PATTERN_BGR;
@@ -245,8 +267,14 @@ int mdp_lcdc_on(struct platform_device *pdev)
 
 	lcdc_underflow_clr |= 0x80000000;	/* enable recovery */
 #else
+	#if defined(CONFIG_MACH_CALLISTO) || defined(CONFIG_MACH_LUCAS)
+	printk("polarity setting\n"); // minhyodebug
+	hsync_polarity = 1;	// active low
+	vsync_polarity = 1;	// active low
+	#else
 	hsync_polarity = 0;
 	vsync_polarity = 0;
+	#endif
 #endif
 	data_en_polarity = 0;
 
@@ -298,7 +326,9 @@ int mdp_lcdc_on(struct platform_device *pdev)
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 #endif
 
+#ifdef CONFIG_SAMSUNG_BOARD_REVISION
 	printk("[HSIL] %s(%d)  mdp_lcdc_on end\n", __func__, __LINE__);
+#endif
 
 	return ret;
 }
@@ -309,6 +339,13 @@ int mdp_lcdc_off(struct platform_device *pdev)
 	struct msm_fb_data_type *mfd;
 	uint32 timer_base = LCDC_BASE;
 	uint32 block = MDP_DMA2_BLOCK;
+
+#ifdef CONFIG_SAMSUNG_BOARD_REVISION
+	// hsil
+	mdp_lcdc_on_flg = 0;
+
+	printk("[HSIL] %s(%d)  mdp_lcdc_off start\n", __func__, __LINE__);
+#endif
 
 	mfd = (struct msm_fb_data_type *)platform_get_drvdata(pdev);
 
@@ -332,7 +369,9 @@ int mdp_lcdc_off(struct platform_device *pdev)
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 	mdp_pipe_ctrl(block, MDP_BLOCK_POWER_OFF, FALSE);
 
+#ifdef CONFIG_SAMSUNG_BOARD_REVISION
 	printk("[HSIL] %s(%d)  mdp_lcdc_off end\n", __func__, __LINE__);
+#endif
 
 #if defined ( CONFIG_MACH_GIO ) || defined(CONFIG_MACH_COOPER)
 	if( lcd_type_smd == 0 )

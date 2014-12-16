@@ -115,7 +115,7 @@ EXPORT_SYMBOL(lcd_on_state_for_debug);
 
 
 /*  added for TN LCD Backlight */
-static DECLARE_MUTEX(backlight_sem);
+static DEFINE_SEMAPHORE(backlight_sem);
 
 struct setting_table {
 	unsigned char command;	
@@ -877,7 +877,7 @@ static int __devinit s6d04h0a_probe(struct platform_device *pdev)
 			/* INT setting */
 			irq = MSM_GPIO_TO_INT(GPIO_LCD_DET);
 			lcd_det_data.irq = -1;
-			set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
+			irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
 			err = request_irq(irq, lcd_det_irq_handler, IRQF_DISABLED, "lcd_det_int", &lcd_det_data);
 			if (err)
 			{

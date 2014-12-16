@@ -43,9 +43,9 @@
 
 /* CHJ */
 #include <mach/gpio.h>
+#include <mach/vreg.h>
 #include <linux/delay.h>
 #include <linux/i2c/europa_tsp_gpio.h>
-#include <linux/regulator/consumer.h>
 /* CHJ */
 
 //#include "Device.h"
@@ -469,11 +469,10 @@ void SetTargetVDDStrong(void)
 // to do
 void ApplyTargetVDD(void)
 {
-	struct regulator *regulator_touch;
+	struct vreg *vreg_touch;
 	
-	regulator_touch = regulator_get(NULL, "maxldo06");
-	regulator_set_voltage(regulator_touch, 2600000, 2600000);
-	regulator_enable(regulator_touch);
+	vreg_touch = vreg_get(NULL, "maxldo06");
+	vreg_enable(vreg_touch);
 }
 
 // ********************* LOW-LEVEL ISSP SUBROUTINE SECTION ********************
@@ -489,11 +488,10 @@ void ApplyTargetVDD(void)
 // to do
 void RemoveTargetVDD(void)
 {
-	struct regulator *regulator_touch;
+	struct vreg *vreg_touch;
 	
-	regulator_touch = regulator_get(NULL, "maxldo06");
-	regulator_set_voltage(regulator_touch, 2600000, 2600000);
-	regulator_disable(regulator_touch);
+	vreg_touch = vreg_get(NULL, "maxldo06");
+	vreg_disable(vreg_touch);
 }
 #endif
 //end of file ISSP_Drive_Routines.c

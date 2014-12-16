@@ -1199,12 +1199,12 @@ int calculate_batt_voltage(int vbatt_adc)
 			if( prevVal < (vbatt_adc-BATT_CAL_CHG))
 			{	
 				vbatt_adc = vbatt_adc-BATT_CAL_CHG;		
-				printk("[Battery] vbatt_adc-BATT_CAL_CHG \n");
+				DBG("[Battery] vbatt_adc-BATT_CAL_CHG \n");
 			}	
 			else
 			{
 				vbatt_adc = prevVal;
-				printk("[Battery] chg_en & prevVal \n");
+				DBG("[Battery] chg_en & prevVal \n");
 			}	
 		}
 		else
@@ -1988,7 +1988,7 @@ void msm_batt_check_event(struct work_struct *work)
 				return;
 		}
 		
-	printk(KERN_ERR "[Battery] %s \n", __func__);
+	//printk(KERN_ERR "[Battery] %s \n", __func__);
 	
 	get_batt_info();
 	check_charging_status(dwChargingState);
