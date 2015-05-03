@@ -4,6 +4,7 @@
  * Transcendent memory
  *
  * Copyright (c) 2009-2011, Dan Magenheimer, Oracle Corp.
+ * Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  */
 
 #ifndef _TMEM_H_
@@ -13,6 +14,7 @@
 #include <linux/highmem.h>
 #include <linux/hash.h>
 #include <linux/atomic.h>
+#include <linux/fmem.h>
 
 /*
  * These are pre-defined by the Xen<->Linux ABI
@@ -46,8 +48,6 @@
 #define ASSERT_SENTINEL(_x, _y) do { } while (0)
 #define ASSERT_INVERTED_SENTINEL(_x, _y) do { } while (0)
 #endif
-
-#define ASSERT_SPINLOCK(_l)	WARN_ON(!spin_is_locked(_l))
 
 /*
  * A pool is the highest-level data structure managed by tmem and
@@ -147,6 +147,7 @@ struct tmem_obj {
 	unsigned int objnode_tree_height;
 	unsigned long objnode_count;
 	long pampd_count;
+	void *extra; /* for private use by pampd implementation */
 	DECL_SENTINEL
 };
 
@@ -166,10 +167,18 @@ struct tmem_objnode {
 
 /* pampd abstract datatype methods provided by the PAM implementation */
 struct tmem_pamops {
-	void *(*create)(struct tmem_pool *, struct tmem_oid *, uint32_t,
-			struct page *);
-	int (*get_data)(struct page *, void *, struct tmem_pool *);
-	void (*free)(void *, struct tmem_pool *);
+	void *(*create)(char *, size_t, bool, int,
+			struct tmem_pool *, struct tmem_oid *, uint32_t);
+	int (*get_data)(char *, size_t *, bool, void *, struct tmem_pool *,
+				struct tmem_oid *, uint32_t);
+	int (*get_data_and_free)(char *, size_t *, bool, void *,
+				struct tmem_pool *, struct tmem_oid *,
+				uint32_t);
+	void (*free)(void *, struct tmem_pool *, struct tmem_oid *, uint32_t);
+	void (*free_obj)(struct tmem_pool *, struct tmem_obj *);
+	bool (*is_remote)(void *);
+	void (*new_obj)(struct tmem_obj *);
+	int (*replace_in_obj)(void *, struct tmem_obj *);
 };
 extern void tmem_register_pamops(struct tmem_pamops *m);
 
@@ -179,17 +188,25 @@ struct tmem_hostops {
 	void (*obj_free)(struct tmem_obj *, struct tmem_pool *);
 	struct tmem_objnode *(*objnode_alloc)(struct tmem_pool *);
 	void (*objnode_free)(struct tmem_objnode *, struct tmem_pool *);
+	void (*flush_all_obj)(void);
+	void (*control)(bool);
 };
 extern void tmem_register_hostops(struct tmem_hostops *m);
 
 /* core tmem accessor functions */
 extern int tmem_put(struct tmem_pool *, struct tmem_oid *, uint32_t index,
-			struct page *page);
+			char *, size_t, bool, bool);
 extern int tmem_get(struct tmem_pool *, struct tmem_oid *, uint32_t index,
-			struct page *page);
+			char *, size_t *, bool, int);
+extern int tmem_replace(struct tmem_pool *, struct tmem_oid *, uint32_t index,
+			void *);
 extern int tmem_flush_page(struct tmem_pool *, struct tmem_oid *,
 			uint32_t index);
 extern int tmem_flush_object(struct tmem_pool *, struct tmem_oid *);
 extern int tmem_destroy_pool(struct tmem_pool *);
+extern int tmem_flush_pool(struct tmem_pool *);
 extern void tmem_new_pool(struct tmem_pool *, uint32_t);
+
+extern void tmem_enable(void);
+extern void tmem_disable(void);
 #endif /* _TMEM_H */
