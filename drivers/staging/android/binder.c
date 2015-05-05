@@ -3032,6 +3032,7 @@ static int binder_release(struct inode *nodp, struct file *filp)
 
 static int binder_node_release(struct binder_node *node, int refs)
 {
+	struct hlist_node *pos;
 	struct binder_ref *ref;
 	int death = 0;
 
@@ -3050,7 +3051,7 @@ static int binder_node_release(struct binder_node *node, int refs)
 	node->local_weak_refs = 0;
 	hlist_add_head(&node->dead_node, &binder_dead_nodes);
 
-	hlist_for_each_entry(ref, &node->refs, node_entry) {
+	hlist_for_each_entry(ref, pos, &node->refs, node_entry) {
 		refs++;
 
 		if (!ref->death)
